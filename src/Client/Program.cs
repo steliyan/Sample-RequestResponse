@@ -17,7 +17,7 @@
 
             try
             {
-                IRequestClient<ISimpleRequest, ISimpleResponse> client = CreateRequestClient(busControl);
+                IRequestClient<ISimpleRequest> client = CreateRequestClient(busControl);
 
                 for (;;)
                 {
@@ -29,15 +29,23 @@
                     // this is run as a Task to avoid weird console application issues
                     Task.Run(async () =>
                     {
-                        try
-                        {
-                            ISimpleResponse response = await client.Request(new SimpleRequest(customerId));
+                        var (response, error) = await client.GetResponse<ISimpleResponse, ISimpleFailResponse>(new SimpleRequest(customerId));
 
-                            Console.WriteLine("Customer Name: {0}", response.CusomerName);
-                        }
-                        catch(Exception e)
+                        if (response.IsCompleted && response.Status == TaskStatus.RanToCompletion)
                         {
-                            Console.WriteLine("Error occurred: {0}",e.Message );
+                            Console.WriteLine("Customer Name: {0}", response.Result.Message.CusomerName);
+                        }
+
+                        if (error.IsCompleted)
+                        {
+                            if (error.Status == TaskStatus.RanToCompletion)
+                            {
+                                Console.WriteLine("Fail: {0}", error.Result.Message.Reason);
+                            }
+                            else if (error.Status == TaskStatus.Faulted)
+                            {
+                                Console.WriteLine("Error occurred: {0}", error.Exception);
+                            }
                         }
                     }).Wait();
                 }
@@ -53,11 +61,11 @@
         }
 
 
-        static IRequestClient<ISimpleRequest, ISimpleResponse> CreateRequestClient(IBusControl busControl)
+        static IRequestClient<ISimpleRequest> CreateRequestClient(IBusControl busControl)
         {
             var serviceAddress = new Uri(ConfigurationManager.AppSettings["ServiceAddress"]);
-            IRequestClient<ISimpleRequest, ISimpleResponse> client =
-                busControl.CreateRequestClient<ISimpleRequest, ISimpleResponse>(serviceAddress, TimeSpan.FromSeconds(10));
+            IRequestClient<ISimpleRequest> client =
+                busControl.CreateRequestClient<ISimpleRequest>(serviceAddress, TimeSpan.FromSeconds(10));
 
             return client;
         }

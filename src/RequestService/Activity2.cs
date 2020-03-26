@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using MassTransit.Courier;
+using Sample.MessageTypes;
 
 namespace RequestService
 {
@@ -8,10 +9,17 @@ namespace RequestService
     {
         public async Task<ExecutionResult> Execute(ExecuteContext<Activity2Args> context)
         {
+            if (context.Arguments.Name.Contains("error"))
+            {
+                throw new Exception("Unknown error...");
+            }
+
             if (context.Arguments.Name.Contains("test"))
             {
-                Console.WriteLine("Faulting Activity2...");
-                throw new CustomException() { Data = "Something went wrong..." };
+                var endpoint = await context.GetSendEndpoint(context.Arguments.ResponseAddress);
+                await endpoint.Send<ISimpleFailResponse>(new { Reason = "Something went wrong..." });
+
+                throw new Exception("Something went wrong error...");
             }
 
             Console.WriteLine("Completing Activity2...");
@@ -26,5 +34,7 @@ namespace RequestService
     public interface Activity2Args
     {
         string Name { get; }
+
+        Uri ResponseAddress { get; }
     }
 }
