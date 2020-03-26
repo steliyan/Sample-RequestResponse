@@ -29,9 +29,16 @@
                     // this is run as a Task to avoid weird console application issues
                     Task.Run(async () =>
                     {
-                        ISimpleResponse response = await client.Request(new SimpleRequest(customerId));
+                        try
+                        {
+                            ISimpleResponse response = await client.Request(new SimpleRequest(customerId));
 
-                        Console.WriteLine("Customer Name: {0}", response.CusomerName);
+                            Console.WriteLine("Customer Name: {0}", response.CusomerName);
+                        }
+                        catch(Exception e)
+                        {
+                            Console.WriteLine("Error occurred: {0}",e.Message );
+                        }
                     }).Wait();
                 }
             }
