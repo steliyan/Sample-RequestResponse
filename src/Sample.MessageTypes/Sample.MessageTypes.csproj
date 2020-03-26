@@ -35,6 +35,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ISimpleFailResponse.cs" />
     <Compile Include="ISimpleRequest.cs" />
     <Compile Include="ISimpleResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
