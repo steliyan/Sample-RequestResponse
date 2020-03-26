@@ -22,14 +22,21 @@
 
             _busControl = Bus.Factory.CreateUsingRabbitMq(x =>
             {
-                IRabbitMqHost host = x.Host(new Uri(ConfigurationManager.AppSettings["RabbitMQHost"]), h =>
+                x.Host(new Uri(ConfigurationManager.AppSettings["RabbitMQHost"]), h =>
                 {
                     h.Username("guest");
                     h.Password("guest");
                 });
 
-                x.ReceiveEndpoint(host, ConfigurationManager.AppSettings["ServiceQueueName"],
-                    e => { e.Consumer<RequestConsumer>(); });
+                x.ReceiveEndpoint(ConfigurationManager.AppSettings["ServiceQueueName"], e =>
+                {
+                    e.Instance(new RequestResponseConsumer());
+                    e.Consumer<RequestConsumer>();
+                });
+
+                x.ReceiveEndpoint("Activity_compensate", e => e.CompensateActivityHost<Activity, ActivityLog>());
+                x.ReceiveEndpoint("Activity_execute", e => e.ExecuteActivityHost<Activity, ActivityArgs>(new Uri("exchange:Activity_compensate")));
+                x.ReceiveEndpoint("Activity2_execute", e => e.ExecuteActivityHost<Activity2, Activity2Args>());
             });
 
             _log.Info("Starting bus...");

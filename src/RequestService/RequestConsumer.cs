@@ -1,22 +1,18 @@
 ﻿namespace RequestService
 {
-    using System.Threading.Tasks;
+    using System;
     using MassTransit;
+    using MassTransit.Courier;
     using Sample.MessageTypes;
 
     public class RequestConsumer :
-        IConsumer<ISimpleRequest>
+        RoutingSlipRequestProxy<ISimpleRequest>
     {
-        public async Task Consume(ConsumeContext<ISimpleRequest> context)
+        protected override void BuildRoutingSlip(RoutingSlipBuilder builder, ConsumeContext<ISimpleRequest> request)
         {
-            System.Console.WriteLine("Returning name for {0}", context.Message.CustomerId);
-
-            context.Respond(new SimpleResponse
-            {
-                CusomerName = string.Format("Customer Number {0}", context.Message.CustomerId)
-            });
+            builder.AddActivity("Activity", new Uri("exchange:Activity_execute"));
+            builder.AddActivity("Activity2", new Uri("exchange:Activity2_execute"), new { Name = request.Message.CustomerId });
         }
-
 
         class SimpleResponse :
             ISimpleResponse
