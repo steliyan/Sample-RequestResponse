@@ -13,7 +13,6 @@
             builder.AddActivity("Activity", new Uri("exchange:Activity_execute"));
             builder.AddActivity("Activity2", new Uri("exchange:Activity2_execute"), new {
                 Name = request.Message.CustomerId,
-                request.ResponseAddress,
             });
         }
 

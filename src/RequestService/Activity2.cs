@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using MassTransit.Courier;
-using Sample.MessageTypes;
 
 namespace RequestService
 {
-    public class Activity2 : IExecuteActivity<Activity2Args>
+    public class Activity2 : IActivity<Activity2Args, Activity2Log>
     {
         public async Task<ExecutionResult> Execute(ExecuteContext<Activity2Args> context)
         {
@@ -16,10 +16,16 @@ namespace RequestService
 
             if (context.Arguments.Name.Contains("test"))
             {
-                var endpoint = await context.GetSendEndpoint(context.Arguments.ResponseAddress);
-                await endpoint.Send<ISimpleFailResponse>(new { Reason = "Something went wrong..." });
-
-                throw new Exception("Something went wrong error...");
+                var variables = new Dictionary<string, object>() {
+                    { "ValidationErrors", new List<string>() { "FOO", "BAR" } }
+                };
+                return context.ReviseItinerary(new { }, variables,
+                    builder =>
+                    {
+                        // Adding this as a workaround in order to be able to add variables to a faulted routing slip
+                        builder.AddActivity("FaultyActivity", new Uri("exchange:FaultyActivity_execute"));
+                        builder.AddActivitiesFromSourceItinerary();
+                    });
             }
 
             Console.WriteLine("Completing Activity2...");
@@ -29,6 +35,12 @@ namespace RequestService
                     CustomerDetails = new CustomerDetails() { Name = "Hello " + context.Arguments.Name }
                 });
         }
+
+        public async Task<CompensationResult> Compensate(CompensateContext<Activity2Log> context)
+        {
+            Console.WriteLine("Complensatiing Activity2...");
+            return context.Compensated();
+        }
     }
 
     public interface Activity2Args
@@ -37,4 +49,7 @@ namespace RequestService
 
         Uri ResponseAddress { get; }
     }
+
+    public interface Activity2Log { }
 }
+
